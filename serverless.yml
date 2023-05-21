@@ -1,0 +1,27 @@
+service: ourapp-backend
+frameworkVersion: "3"
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-southeast-2
+
+functions:
+  signIn:
+    handler: functions/signIn.handler
+    events:
+      - http:
+          method: POST
+          path: /signIn
+          cors: true
+  logIn:
+    handler: functions/logIn.handler
+    events:
+      - http:
+          method: POST
+          path: /logIn
+          cors: true
