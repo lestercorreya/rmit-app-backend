@@ -1,44 +1,62 @@
-// import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-// import * as jwt from 'jsonwebtoken';
-// import { PrismaClient } from "@prisma/client";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { PrismaClient } from "@prisma/client";
+import * as jwt from 'jsonwebtoken';
 
-// const prisma = new PrismaClient()
+const prisma = new PrismaClient()
 
-// module.exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-//   var code: number = 500;
-//   var data: Record<string, any> = { message: "Something went wrong!" };
+module.exports.handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  var code: number = 500;
+  var data: Record<string, any> = { message: "Something went wrong!" };
 
-//   try {
-//     // const userr = {
-//     //   accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbElkIjoiZmZmZkBnbWFpbC5jb20iLCJpYXQiOjE2ODQ1NjA2Nzd9.ILB3GAB9AvlkZxMBScQdPl54vZaeoUuarUTMSeE5v6s"
-//     // }
-//     // const value = await GetDetails.validateAsync(event.body ? JSON.parse(event.body) : {});
-//     const accessToken = event.headers['authorization'].split(' ')[1]
+  try {
+    const accessToken = event.headers['Authorization'].split(' ')[1]
 
-//     const result = jwt.verify(accessToken, "secret_key")
+    const result = jwt.verify(accessToken, "secret_key")
 
-//     const user = await prisma.user.findFirstOrThrow({ where: { email_id: result.emailId } })
+    const user = await prisma.user.findFirstOrThrow({ where: { email_id: result.emailId } })
 
-//     code = 200
-//     data = {
-//       name: user.name,
-//       studentNumber: user.student_number,
-//       emailId: user.email_id,
-//       role: user.role
-//     }
-//   } catch (error) {
-//     code = 400
-//     data = {
-//       message: error.message
-//     }
-//   }
+    if (user.role == "student") {
+      const certificates = await prisma.certificate.findMany({ where: { email_id: result.emailId } })
+      code = 200
+      data = {
+        name: user.name,
+        role: user.role,
+        certificates: certificates.map((certificate) => certificate.url)
+      }
+    } else {
+      const users = await prisma.user.findMany({
+        // @ts-ignore
+        include: {
+          Certificate: {
+            select: {
+              url: true
+            }
+          }
+        },
+        where: {
+          role: "student"
+        }
+      });
+      code = 200
+      data = {
+        name: user.name,
+        role: user.role,
+        students: users.map((student) => ({ name: student.name, certificates: student.Certificate.map(certificate => certificate.url) }))
+      }
+    }
+  } catch (error) {
+    code = 400
+    data = {
+      message: error.message
+    }
+  }
 
-//   return {
-//     statusCode: code,
-//     headers: {
-//       'Access-Control-Allow-Origin': '*',
-//       'Access-Control-Allow-Credentials': true
-//     },
-//     body: data
-//   }
-// }
+  return {
+    statusCode: code,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': true
+    },
+    body: JSON.stringify(data)
+  }
+}

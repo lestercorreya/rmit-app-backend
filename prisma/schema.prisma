@@ -12,10 +12,17 @@ datasource db {
 }
 
 model User {
-  id             Int    @id @default(autoincrement())
+  email_id       String        @id
   name           String
   student_number Int
-  email_id       String
   password       String
-  role           String @default("student")
+  role           String        @default("student")
+  Certificate    Certificate[]
+}
+
+model Certificate {
+  certificate_id String @id
+  Student        User   @relation(fields: [email_id], references: [email_id])
+  email_id       String
+  url            String
 }

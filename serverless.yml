@@ -25,3 +25,17 @@ functions:
           method: POST
           path: /logIn
           cors: true
+  getDetails:
+    handler: functions/getDetails.handler
+    events:
+      - http:
+          method: GET
+          path: /getDetails
+          cors: true
+  validate:
+    handler: functions/validate.handler
+    events:
+      - http:
+          method: POST
+          path: /validate
+          cors: true
